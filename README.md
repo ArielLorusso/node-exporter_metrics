@@ -20,7 +20,19 @@
     ●  Docker y Docker Compose instalados
     ●  Puerto 9100 abierto en el firewall/security group
 
-## 1. Opcion A : Copiar a EC2 (TARGET) desde Mi PC (HOST)  
+
+
+## 1 Opcion A : Descargar a EC2 (TARGET) desde GitHub
+
+    usando  comando `curl`  descargatr el archivo .yaml desde GitHub como raw a instancia EC2 (TARGET)
+    este comando debe ser corrido desde la instancia EC2 (TARGET)
+
+```sh
+curl -O https://raw.githubusercontent.com/ArielLorusso/node-exporter_metrics/refs/heads/main/docker-compose.node-exporter.yml
+curl -O https://raw.githubusercontent.com/ArielLorusso/node-exporter_metrics/refs/heads/main/requisits.sh
+```
+
+### 1. Opcion B : Copiar a EC2 (TARGET) desde Mi PC (HOST)  
 
 usando  comando `scp`  (OpenSSH secure copy ) copiar el archivo .yaml a instancia EC2 (TARGET) 
 
@@ -30,14 +42,14 @@ Reemplazar valores `IP`  y  `ec2-user` por los que corresponda
 scp docker-compose.node-exporter.yml  ec2-user@IP:/home/ec2-user/
 ```
 
-## 1 Opcion B : Descargar a EC2 (TARGET) desde GitHub
+## 2. reauisitos _ _ desde EC2 (TARGET)
 
-    usando  comando `curl`  descargatr el archivo .yaml desde GitHub como raw a instancia EC2 (TARGET)
-    este comando debe ser corrido desde la instancia EC2 (TARGET)
+correr `prereqs.sh ` instala Docker y revisa puertos e IP publica
 
 ```sh
-curl -O https://raw.githubusercontent.com/ArielLorusso/node-exporter_metrics/refs/heads/main/docker-compose.node-exporter.yml
+chmod +x prereqs.sh && ./prereqs.sh
 ```
+
 
 ## 2. Levantar _ _ desde EC2 (TARGET)
 
