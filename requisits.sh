@@ -174,13 +174,34 @@ else
     ok "Sin firewall local activo (ufw inactivo o no instalado)"
 fi
 
-# ─── 6. IP pública ──────────────────────────────────────────────────────────
+# ─── 6. IP pública e Instance ID desde metadatos de AWS ────────────────────
 echo ""
 echo "── 5. Información de red ───────────────────────────────"
 
-PUBLIC_IP=$(curl -s --max-time 5 http://checkip.amazonaws.com 2>/dev/null || \
-            curl -s --max-time 5 https://ifconfig.me 2>/dev/null || \
-            echo "no disponible")
+# IMDSv2: token de sesión requerido por AWS desde 2019
+IMDS_TOKEN=$(curl -s --max-time 3 -X PUT "http://169.254.169.254/latest/api/token" \
+    -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" 2>/dev/null)
+
+if [ -n "$IMDS_TOKEN" ]; then
+    # Estamos en una EC2 — podemos obtener metadatos
+    INSTANCE_ID=$(curl -s --max-time 3 -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" \
+        http://169.254.169.254/latest/meta-data/instance-id 2>/dev/null)
+    REGION=$(curl -s --max-time 3 -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" \
+        http://169.254.169.254/latest/meta-data/placement/region 2>/dev/null)
+    PUBLIC_IP=$(curl -s --max-time 3 -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" \
+        http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null)
+    IS_EC2=true
+    ok "EC2 detectada — Instance ID: $INSTANCE_ID  Región: $REGION"
+else
+    # No es EC2 o metadatos no disponibles
+    PUBLIC_IP=$(curl -s --max-time 5 http://checkip.amazonaws.com 2>/dev/null || \
+                curl -s --max-time 5 https://ifconfig.me 2>/dev/null || \
+                echo "no disponible")
+    INSTANCE_ID="no-disponible"
+    REGION="no-disponible"
+    IS_EC2=false
+    info "No se detectaron metadatos de EC2 (puede ser una VM local)"
+fi
 
 PRIVATE_IP=$(hostname -I | awk '{print $1}')
 
@@ -195,26 +216,67 @@ echo "════════════════════════�
 echo ""
 ok "Sistema listo para correr node-exporter"
 echo ""
-info "Comando para levantar node-exporter:"
+info "Comando para levantar node-exporter (correr en ESTA máquina):"
+echo ""
 echo "  $COMPOSE_CMD -f docker-compose.node-exporter.yml up -d"
 echo ""
 
-echo -e "${YELLOW}ACCIÓN REQUERIDA en AWS Console / CLI:${NC}"
-echo "  Abrí el puerto 9100 en el Security Group de esta instancia"
-echo "  Solo para la IP de tu servidor Prometheus (más seguro):"
-echo ""
-echo "  aws ec2 authorize-security-group-ingress \\"
-echo "    --group-id <SG-ID> \\"
-echo "    --protocol tcp \\"
-echo "    --port 9100 \\"
-echo "    --cidr <IP-PROMETHEUS>/32"
-echo ""
-echo "  Luego agregá en prometheus.yml del servidor central:"
-echo ""
-echo "  - job_name: 'esta-ec2'"
-echo "    static_configs:"
-echo "      - targets: ['${PUBLIC_IP}:9100']"
-echo "        labels:"
-echo "          host: 'nombre-descriptivo'"
+if [ "$IS_EC2" = true ]; then
+    echo -e "${YELLOW}══ ACCIÓN REQUERIDA — Correr en tu PC (servidor Prometheus) ══${NC}"
+    echo ""
+    echo "  # 1. Obtener el SG-ID de esta instancia y abrir puerto 9100:"
+    echo ""
+    echo "  SG_ID=\$(aws ec2 describe-instances \\"
+    echo "    --instance-ids ${INSTANCE_ID} \\"
+    echo "    --region ${REGION} \\"
+    echo "    --query 'Reservations[].Instances[].SecurityGroups[].GroupId' \\"
+    echo "    --output text)"
+    echo ""
+    echo "  aws ec2 authorize-security-group-ingress \\"
+    echo "    --group-id \$SG_ID \\"
+    echo "    --protocol tcp \\"
+    echo "    --port 9100 \\"
+    echo "    --region ${REGION} \\"
+    echo "    --cidr \$(curl -s -4 ifconfig.me)/32"
+    echo ""
+    echo "  # 2. Agregar en prometheus.yml del servidor central:"
+    echo ""
+    echo "  - job_name: 'ec2-${INSTANCE_ID}'"
+    echo "    static_configs:"
+    echo "      - targets: ['${PUBLIC_IP}:9100']"
+    echo "        labels:"
+    echo "          host: 'nombre-descriptivo'   # <-- cambiá esto"
+    echo "          instance_id: '${INSTANCE_ID}'"
+    echo "          region: '${REGION}'"
+    echo ""
+    echo "  # 3. Recargar Prometheus sin reiniciar:"
+    echo ""
+    echo "  curl -X POST http://localhost:9090/-/reload"
+else
+    echo -e "${YELLOW}ACCIÓN REQUERIDA:${NC}"
+    echo "  Abrí el puerto 9100 en tu firewall para la IP del servidor Prometheus"
+fi
+
 echo ""
 echo "══════════════════════════════════════════════════════"
+
+# PROBLEMA:
+
+    # EC2 (TARGET)                    Tu PC (HOST)
+    # ┌─────────────────┐             ┌──────────────────┐
+    # │ Sabe su:        │             │ Tiene:           │
+    # │ ✅ Instance ID  │             │ ✅ AWS CLI con   │
+    # │ ✅ IP privada   │             │    credenciales  │
+    # │ ✅ IP pública   │             │ ✅ Puede llamar  │
+    # │ ❌ SG-ID real   │             │    describe-inst │
+    # │ ❌ IP de quien  │             │ ✅ Sabe su IP    │
+    # │    la monitorea │             │    pública       │
+    # └─────────────────┘             └──────────────────┘
+    #
+    # EC2 no tiene credenciales AWS por defecto, 
+    # así que no puede llamar a describe-instances
+
+# SOLUCION: 
+
+    # el script ahora usa IMDSv2 (Instance Metadata Service v2)  
+    # el sistema interno de AWS que toda EC2 tiene en 169.254.169.254
