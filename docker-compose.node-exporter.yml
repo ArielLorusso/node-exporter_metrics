@@ -1,22 +1,3 @@
-# node-exporter para instalar en cualquier servidor Linux     ( MONITOR TARGET : ej AWS )
-#  Uso:
-#    ● copiar            docker-compose.node-exporter.yml
-#    ● docker compose -f docker-compose.node-exporter.yml up -d
-#
-#  Requisitos:
-#    ●  Docker y Docker Compose instalados
-#    ●  Puerto 9100 abierto en el firewall/security group
-#-------------------------------------------------------------------------------------------
-#
-# Una vez corriendo, Prometheus en el servidor central        ( MONITOR HOST  ej : Mi PC)
-# solo necesita agregar en su    prometheus.yml:
-#
-#   - job_name: 'nombre-del-servidor'
-#     static_configs:
-#       - targets: ['IP-DE-ESTE-SERVIDOR:9100']
-#         labels:
-#           host: 'nombre-descriptivo'
-
 services:
   node-exporter:
     image: prom/node-exporter:latest
@@ -40,14 +21,43 @@ services:
                                 # más eficiente que bridge para monitoreo
 
 
+
+
+# node-exporter para instalar en cualquier servidor Linux     ( MONITOR TARGET : ej AWS )
+#  Uso:
+#    ● copiar            docker-compose.node-exporter.yml
+#    ● docker compose -f docker-compose.node-exporter.yml up -d
+#
+#  Requisitos:
+#    ●  Docker y Docker Compose instalados
+#    ●  Puerto 9100 abierto en el firewall/security group
+#-------------------------------------------------------------------------------------------
+#
+# Una vez corriendo, Prometheus en el servidor central        ( MONITOR HOST  ej : Mi PC)
+# solo necesita agregar en su    prometheus.yml:
+#
+#   - job_name: 'nombre-del-servidor'
+#     static_configs:
+#       - targets: ['IP-DE-ESTE-SERVIDOR:9100']
+#         labels:
+#           host: 'nombre-descriptivo'
+
+
+
+
 # 1.A  Copiar el archivo desde Mi PC HOST  a la (EC2 TARGET)  con  scp  (OpenSSH secure copy )
-scp docker-compose.node-exporter.yml  ec2-user@IP:/home/ec2-user/
+#
+#    scp docker-compose.node-exporter.yml  ec2-user@IP:/home/ec2-user/
+#
 # 1.B  Copiar el archivo desde (EC2 TARGET)                   con  curl   desde GitHub
-curl -O https://raw.githubusercontent.com/tu-usuario/tu-repo/main/docker-compose.node-exporter.yml
-
+#
+#     curl -O https://raw.githubusercontent.com/tu-usuario/tu-repo/main/docker-compose.node-exporter.yml
+#
 # 2. Levantar
-docker compose -f docker-compose.node-exporter.yml up -d
-
+#
+#     docker compose -f docker-compose.node-exporter.yml up -d
+#
 # 3. Verificar
-curl http://localhost:9100/metrics | head -3
+#
+#     curl http://localhost:9100/metrics | head -3
 ```
