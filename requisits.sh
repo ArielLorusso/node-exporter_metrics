@@ -260,23 +260,42 @@ fi
 echo ""
 echo "══════════════════════════════════════════════════════"
 
-# PROBLEMA:
+# INSPECCIONAR ID e IP
 
-    # EC2 (TARGET)                    Tu PC (HOST)
-    # ┌─────────────────┐             ┌──────────────────┐
-    # │ Sabe su:        │             │ Tiene:           │
-    # │ ✅ Instance ID  │             │ ✅ AWS CLI con   │
-    # │ ✅ IP privada   │             │    credenciales  │
-    # │ ✅ IP pública   │             │ ✅ Puede llamar  │
-    # │ ❌ SG-ID real   │             │    describe-inst │
-    # │ ❌ IP de quien  │             │ ✅ Sabe su IP    │
-    # │    la monitorea │             │    pública       │
-    # └─────────────────┘             └──────────────────┘
-    #
-    # EC2 no tiene credenciales AWS por defecto, 
-    # así que no puede llamar a describe-instances
+    # PROBLEMA:
+    
+        #   EC2 (TARGET)                    Tu PC (HOST)
+        #   ┌─────────────────┐             ┌──────────────────┐
+        #   │ Sabe su:        │             │ Tiene:           │
+        #   │ ✅ Instance ID  │             │ ✅ AWS CLI con   │
+        #   │ ✅ IP privada   │             │    credenciales  │
+        #   │ ✅ IP pública   │             │ ✅ Puede llamar  │
+        #   │ ❌ SG-ID real   │             │    describe-inst │
+        #   │ ❌ IP de quien  │             │ ✅ Sabe su IP    │
+        #   │    la monitorea │             │    pública       │
+        #   └─────────────────┘             └──────────────────┘
+        #   
+        #       EC2 no tiene credenciales AWS por defecto, 
+        #       así que no puede llamar a describe-instances
+    
+    # SOLUCION: 
 
-# SOLUCION: 
+        # el script ahora usa IMDSv2 (Instance Metadata Service v2)  
+        # el sistema interno de AWS que toda EC2 tiene en 169.254.169.254
 
-    # el script ahora usa IMDSv2 (Instance Metadata Service v2)  
-    # el sistema interno de AWS que toda EC2 tiene en 169.254.169.254
+
+# SEGURIDAD    usamos Variable de entorno 
+
+    #  Qué es ?
+        
+        #   Variable de entorno:  export MI_VAR="valor"  → heredada por procesos hijos
+        #   Variable de shell:           MI_VAR="valor"  → solo en este proceso bash
+
+    #  Es seguro ?
+ 
+        #   Riesgo               Nivel      Por qué
+        #   ─────────────────────────────────────────────────────
+        #   Queda guardada         ✅ Bajo    Se borra al cerrar terminal
+        #   Aparece en ps aux      ✅ Bajo    Solo el nombre de var, no el valor  
+        #   Queda en .bash_history ⚠️ Medio   El COMANDO queda, pero SG-ID no es secreto
+        #   Aparece en logs        ✅ Bajo    No se loguea automáticamente

@@ -60,4 +60,4 @@ services:
 # 3. Verificar
 #
 #     curl http://localhost:9100/metrics | head -3
-```
+
