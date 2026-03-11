@@ -20,7 +20,7 @@
     ●  Docker y Docker Compose instalados
     ●  Puerto 9100 abierto en el firewall/security group
 
-# 1. Opcion A  Copiar _ _  desde Mi PC (HOST)  
+## 1. Opcion A  Copiar _ _  desde Mi PC (HOST)  
 
 usando  comando `scp`  (OpenSSH secure copy ) copiar el archivo .yaml a instancia EC2 (TARGET) 
 
@@ -30,20 +30,20 @@ Reemplazar valores `IP`  y  `ec2-user` por los que corresponda
 scp docker-compose.node-exporter.yml  ec2-user@IP:/home/ec2-user/
 ```
 
-# 1 Opcion B  Copiar _ _  desde EC2 (TARGET)  
+## 1 Opcion B  Copiar _ _  desde EC2 (TARGET)  
 usando  comando `curl`  copiar el archivo .yaml desde GitHub como raw a instancia EC2 (TARGET)
 
 ```sh
 curl -O https://raw.githubusercontent.com/ArielLorusso/node-exporter_metrics/refs/heads/main/docker-compose.node-exporter.yml
 ```
 
-# 2. Levantar _ _ desde Mi PC (HOST)
+## 2. Levantar _ _ desde Mi PC (HOST)
 
 ```sh
 docker compose -f docker-compose.node-exporter.yml up -d
 ```
 
-# 3. Verificar _ _ desde Mi PC (HOST)
+## 3. Verificar _ _ desde Mi PC (HOST)
 
 ```sh
 curl http://localhost:9100/metrics | head -3
