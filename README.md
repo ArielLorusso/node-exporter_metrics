@@ -42,22 +42,30 @@ Reemplazar valores `IP`  y  `ec2-user` por los que corresponda
 scp docker-compose.node-exporter.yml  ec2-user@IP:/home/ec2-user/
 ```
 
-## 2. reauisitos _ _ desde EC2 (TARGET)
+## 2. reauisitos _ desde EC2 (TARGET)
 
-correr `prereqs.sh ` instala Docker y revisa puertos e IP publica
+correr `requisits.sh ` con permiso de ejecucion
 
 ```sh
-chmod +x prereqs.sh && ./prereqs.sh
+chmod +x requisits.sh && ./requisits.sh
 ```
+    1) Revisa version de Sistema Operativo
+    2) Revisa instala Docker y compose
+    3) Corre :  docker compose -f docker-compose.node-exporter.yml up -d
+    4) Revisa puertos e IP publica
+    5) Imprime instrucciones para AWS_CLI
 
+Con el requisits.sh ejecutado podriamos seguir desde las indicaciones provistas
 
-## 2. Levantar _ _ desde EC2 (TARGET)
+En caso de que por algun motivo no funcione se avlaran los pasos a seguir igualmente
+
+## 3. Levantar _ desde EC2 (TARGET)
 
 ```sh
 docker compose -f docker-compose.node-exporter.yml up -d
 ```
 
-## 3. Verificar _ _ desde EC2 (TARGET)
+## 4. Verificar _ desde EC2 (TARGET)
 
 ```sh
 curl http://localhost:9100/metrics | head -3
